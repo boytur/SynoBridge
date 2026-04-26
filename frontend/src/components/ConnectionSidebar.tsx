@@ -1,5 +1,5 @@
 import {
-  Plus, Search, Server, Trash2, Wifi, Loader2, Settings
+  Plus, Search, Server, Trash2, Wifi, Loader2, Settings, Sun, Moon
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -17,10 +17,12 @@ interface Props {
   onSettingsClick: () => void
   prefillServer?: DiscoveredServer | null
   onPrefillClear?: () => void
+  theme: 'light' | 'dark'
+  onThemeToggle: () => void
 }
 
 
-export function ConnectionSidebar({ selectedId, onSelect, onSettingsClick, prefillServer, onPrefillClear }: Props) {
+export function ConnectionSidebar({ selectedId, onSelect, onSettingsClick, prefillServer, onPrefillClear, theme, onThemeToggle }: Props) {
   const connections = useConnections().data || []
   const isLoading = useConnections().isLoading
   const createConn = useCreateConnection()
@@ -135,8 +137,8 @@ export function ConnectionSidebar({ selectedId, onSelect, onSettingsClick, prefi
   return (
     <aside className="glass-sidebar w-64 flex flex-col h-full border-r border-white/5">
       <div className="p-6">
-        <h1 className="text-xl font-bold text-white flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/20 text-primary">
+        <h1 className="text-xl font-bold text-foreground flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/20 text-primary shadow-sm shadow-primary/20">
             <Server className="w-5 h-5" />
           </div>
           SynoBridge
@@ -163,13 +165,13 @@ export function ConnectionSidebar({ selectedId, onSelect, onSettingsClick, prefi
                 className={cn(
                   'group flex items-center gap-3 px-3 py-2 rounded-xl text-sm cursor-pointer transition-all duration-200',
                   selectedId === conn.id
-                    ? 'bg-primary/20 text-primary border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
-                    : 'text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent'
+                    ? 'bg-primary/20 text-primary border border-primary/30 shadow-[0_0_15px_rgba(var(--primary),0.05)]'
+                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground border border-transparent'
                 )}
               >
                 <div className={cn(
                   "p-1.5 rounded-lg transition-colors",
-                  selectedId === conn.id ? "bg-primary/20" : "bg-white/5 group-hover:bg-white/10"
+                  selectedId === conn.id ? "bg-primary/20" : "bg-muted group-hover:bg-accent"
                 )}>
                   <Wifi className="w-3.5 h-3.5 shrink-0" />
                 </div>
@@ -194,14 +196,25 @@ export function ConnectionSidebar({ selectedId, onSelect, onSettingsClick, prefi
         </div>
       </nav>
 
-      <div className="p-4 border-t border-white/5 bg-white/5 flex gap-2">
+      <div className="p-4 border-t border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 flex gap-2">
         <button
           onClick={onSettingsClick}
-          className="flex-1 flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all border border-transparent"
+          className="flex-1 flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all border border-transparent"
           title="Access Control"
         >
           <Settings className="w-4 h-4" />
           <span className="font-medium">Settings</span>
+        </button>
+        <button
+          onClick={onThemeToggle}
+          className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all border border-transparent flex items-center justify-center"
+          title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+        >
+          {theme === 'light' ? (
+            <Moon className="w-4 h-4 text-slate-600" />
+          ) : (
+            <Sun className="w-4 h-4 text-yellow-400" />
+          )}
         </button>
       </div>
 
