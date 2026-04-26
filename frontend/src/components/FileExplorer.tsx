@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FileList } from './FileList'
 import { FileGrid } from './FileGrid'
+import { FilePreview } from './FilePreview'
 import { useFileList, useCreateFolder, useUploadFile } from '@/hooks/useFileSystem'
 import { useToast } from '@/lib/toast-context'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -32,6 +33,7 @@ export function FileExplorer({ connection }: Props) {
   const [newFolderName, setNewFolderName] = useState('')
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [searchQuery, setSearchQuery] = useState('')
+  const [previewFile, setPreviewFile] = useState<FileInfo | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
@@ -46,6 +48,7 @@ export function FileExplorer({ connection }: Props) {
 
   const handleFileClick = (file: FileInfo) => {
     if (file.isDirectory) navigate(file.path)
+    else setPreviewFile(file)
   }
 
   const handleBreadcrumb = (idx: number) => {
@@ -124,13 +127,13 @@ export function FileExplorer({ connection }: Props) {
       onDrop={handleDrop}
     >
       {/* Toolbar */}
-      <div className="flex items-center gap-4 px-6 py-4 border-b border-white/10 glass-card">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 border-b border-border/50 glass-card shrink-0">
         {/* Breadcrumbs */}
-        <div className="flex items-center bg-white/5 rounded-full px-1 py-1 border border-white/10 max-w-2xl flex-1 overflow-hidden">
+        <div className="flex items-center bg-muted/50 rounded-full px-1 py-1 border border-border/50 w-full sm:max-w-2xl sm:flex-1 overflow-hidden">
           <button
             onClick={() => handleBreadcrumb(-1)}
             className={cn(
-              "p-2 rounded-full hover:bg-white/10 transition-colors shrink-0",
+              "p-2 rounded-full hover:bg-accent transition-colors shrink-0",
               !path ? "text-primary" : "text-muted-foreground"
             )}
           >
@@ -140,10 +143,10 @@ export function FileExplorer({ connection }: Props) {
           <div className="flex items-center overflow-x-auto no-scrollbar scroll-smooth">
             {breadcrumbs.map((crumb, idx) => (
               <React.Fragment key={idx}>
-                <ChevronRight className="w-3 h-3 text-white/20 shrink-0" />
+                <ChevronRight className="w-3 h-3 text-muted-foreground/30 shrink-0" />
                 <button
                   onClick={() => handleBreadcrumb(idx)}
-                  className="px-3 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap rounded-full hover:bg-white/10"
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap rounded-full hover:bg-accent"
                 >
                   {crumb}
                 </button>
@@ -152,47 +155,49 @@ export function FileExplorer({ connection }: Props) {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="relative w-64 group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-          <input
-            type="text"
-            placeholder="Search in folder..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 bg-white/5 rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
-          />
-        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Search */}
+          <div className="relative flex-1 sm:w-64 group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-9 sm:h-10 pl-9 sm:pl-10 pr-4 bg-muted/50 rounded-xl border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/50"
+            />
+          </div>
 
-        <div className="flex items-center gap-2 border-l border-white/10 pl-4">
-          <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh" className="rounded-full">
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => setMkdirOpen(true)} title="New Folder" className="rounded-full">
-            <FolderPlus className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} title="Upload" className="rounded-full">
-            <Upload className="w-4 h-4" />
-          </Button>
-          <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileInput} />
+          <div className="flex items-center gap-1 sm:gap-2 border-l border-border/50 pl-2 sm:pl-4">
+            <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full hover:bg-accent">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => setMkdirOpen(true)} title="New Folder" className="hidden sm:flex w-9 h-9 rounded-full hover:bg-accent">
+              <FolderPlus className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} title="Upload" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full hover:bg-accent">
+              <Upload className="w-4 h-4" />
+            </Button>
+            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileInput} />
 
-          <div className="flex bg-white/5 rounded-xl border border-white/10 p-1 ml-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setViewMode('list')}
-              className={cn("w-8 h-8 rounded-lg", viewMode === 'list' ? "bg-white/10 text-primary" : "text-muted-foreground")}
-            >
-              <List className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setViewMode('grid')}
-              className={cn("w-8 h-8 rounded-lg", viewMode === 'grid' ? "bg-white/10 text-primary" : "text-muted-foreground")}
-            >
-              <Grid className="w-4 h-4" />
-            </Button>
+            <div className="hidden xs:flex bg-muted/50 rounded-xl border border-border/50 p-1 ml-1 sm:ml-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setViewMode('list')}
+                className={cn("w-7 h-7 sm:w-8 sm:h-8 rounded-lg", viewMode === 'list' ? "bg-accent text-primary shadow-sm" : "text-muted-foreground")}
+              >
+                <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setViewMode('grid')}
+                className={cn("w-7 h-7 sm:w-8 sm:h-8 rounded-lg", viewMode === 'grid' ? "bg-accent text-primary shadow-sm" : "text-muted-foreground")}
+              >
+                <Grid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -264,6 +269,12 @@ export function FileExplorer({ connection }: Props) {
           </form>
         </DialogContent>
       </Dialog>
+
+      <FilePreview 
+        file={previewFile} 
+        connectionId={connection.id} 
+        onClose={() => setPreviewFile(null)} 
+      />
     </div>
   )
 }
