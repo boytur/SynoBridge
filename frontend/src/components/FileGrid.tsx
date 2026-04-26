@@ -1,4 +1,4 @@
-import { File, Folder, Star, Image as ImageIcon } from 'lucide-react'
+import { File, Folder, Star } from 'lucide-react'
 import { useWishlist } from '@/hooks/useWishlist'
 import type { FileInfo } from '@/lib/types'
 import { cn } from '@/lib/utils'

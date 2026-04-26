@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useRef, useState, useEffect } from 'react'
 import {
   ChevronRight,
   FolderPlus,
@@ -24,10 +24,12 @@ import { cn } from '@/lib/utils'
 
 interface Props {
   connection: Connection
+  initialPath?: string
+  onPathChange?: (path: string) => void
 }
 
-export function FileExplorer({ connection }: Props) {
-  const [path, setPath] = useState('')
+export function FileExplorer({ connection, initialPath = '', onPathChange }: Props) {
+  const [path, setPath] = useState(initialPath)
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [mkdirOpen, setMkdirOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
@@ -42,9 +44,17 @@ export function FileExplorer({ connection }: Props) {
   const createFolder = useCreateFolder()
   const uploadFile = useUploadFile()
 
+  // Sync internal path with prop
+  useEffect(() => {
+    setPath(initialPath)
+  }, [initialPath])
+
   const breadcrumbs = path ? path.split('/').filter(Boolean) : []
 
-  const navigate = (newPath: string) => setPath(newPath)
+  const navigate = (newPath: string) => {
+    setPath(newPath)
+    onPathChange?.(newPath)
+  }
 
   const handleFileClick = (file: FileInfo) => {
     if (file.isDirectory) navigate(file.path)
@@ -52,11 +62,8 @@ export function FileExplorer({ connection }: Props) {
   }
 
   const handleBreadcrumb = (idx: number) => {
-    if (idx < 0) {
-      setPath('')
-    } else {
-      setPath(breadcrumbs.slice(0, idx + 1).join('/'))
-    }
+    const newPath = idx < 0 ? '' : breadcrumbs.slice(0, idx + 1).join('/')
+    navigate(newPath)
   }
 
   const handleDrop = useCallback(
@@ -120,6 +127,14 @@ export function FileExplorer({ connection }: Props) {
     }
   }
 
+  const breadcrumbRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (breadcrumbRef.current) {
+      breadcrumbRef.current.scrollLeft = breadcrumbRef.current.scrollWidth
+    }
+  }, [path])
+
   return (
     <div
       className="flex flex-col h-full"
@@ -129,24 +144,34 @@ export function FileExplorer({ connection }: Props) {
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 border-b border-border/50 glass-card shrink-0">
         {/* Breadcrumbs */}
-        <div className="flex items-center bg-muted/50 rounded-full px-1 py-1 border border-border/50 w-full sm:max-w-2xl sm:flex-1 overflow-hidden">
+        <div className="flex items-center bg-muted/50 rounded-full px-1 py-1 border border-border/50 w-full sm:max-w-2xl sm:flex-1 overflow-hidden relative group/nav">
           <button
             onClick={() => handleBreadcrumb(-1)}
             className={cn(
-              "p-2 rounded-full hover:bg-accent transition-colors shrink-0",
-              !path ? "text-primary" : "text-muted-foreground"
+              "p-2 rounded-full hover:bg-accent transition-all shrink-0 z-10",
+              !path ? "text-primary bg-primary/10" : "text-muted-foreground"
             )}
           >
             <Home className="w-4 h-4" />
           </button>
 
-          <div className="flex items-center overflow-x-auto no-scrollbar scroll-smooth">
+          <div 
+            ref={breadcrumbRef}
+            className="flex items-center overflow-x-auto no-scrollbar scroll-smooth pr-10"
+            style={{ 
+              maskImage: 'linear-gradient(to right, white 80%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, white 80%, transparent 100%)'
+            }}
+          >
             {breadcrumbs.map((crumb, idx) => (
               <React.Fragment key={idx}>
                 <ChevronRight className="w-3 h-3 text-muted-foreground/30 shrink-0" />
                 <button
                   onClick={() => handleBreadcrumb(idx)}
-                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap rounded-full hover:bg-accent"
+                  className={cn(
+                    "px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium transition-all whitespace-nowrap rounded-full hover:bg-accent",
+                    idx === breadcrumbs.length - 1 ? "text-foreground" : "text-muted-foreground/50 hover:text-foreground"
+                  )}
                 >
                   {crumb}
                 </button>

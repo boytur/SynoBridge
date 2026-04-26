@@ -71,3 +71,14 @@
 .glass-card {
   @apply bg-white/70 dark:bg-white/5 backdrop-blur-lg border border-slate-200 dark:border-white/10 shadow-sm;
 }
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

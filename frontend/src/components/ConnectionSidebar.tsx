@@ -1,5 +1,6 @@
 import {
-  Plus, Search, Server, Trash2, Wifi, Loader2, Settings, Sun, Moon
+  Plus, Search, Server, Trash2, Wifi, Loader2, Settings, Sun, Moon,
+  Star
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -15,14 +16,24 @@ interface Props {
   selectedId: number | null
   onSelect: (conn: Connection) => void
   onSettingsClick: () => void
+  onWishlistClick: () => void
   prefillServer?: DiscoveredServer | null
   onPrefillClear?: () => void
   theme: 'light' | 'dark'
-  onThemeToggle: () => void
+  setTheme: (theme: 'light' | 'dark') => void
 }
 
 
-export function ConnectionSidebar({ selectedId, onSelect, onSettingsClick, prefillServer, onPrefillClear, theme, onThemeToggle }: Props) {
+export function ConnectionSidebar({
+  selectedId,
+  onSelect,
+  onSettingsClick,
+  onWishlistClick,
+  prefillServer,
+  onPrefillClear,
+  theme,
+  setTheme
+}: Props) {
   const connections = useConnections().data || []
   const isLoading = useConnections().isLoading
   const createConn = useCreateConnection()
@@ -59,10 +70,10 @@ export function ConnectionSidebar({ selectedId, onSelect, onSettingsClick, prefi
       }
     } catch (err) {
       const apiErr = err as ApiError
-      toast({ 
-        title: 'Scan failed', 
+      toast({
+        title: 'Scan failed',
         description: apiErr.response?.data?.error || 'Could not scan the network.',
-        variant: 'destructive' 
+        variant: 'destructive'
       })
     } finally {
       setIsScanning(false)
@@ -116,10 +127,10 @@ export function ConnectionSidebar({ selectedId, onSelect, onSettingsClick, prefi
       toast({ title: 'Connection added' })
     } catch (err) {
       const apiErr = err as ApiError
-      toast({ 
-        title: 'Failed to add connection', 
+      toast({
+        title: 'Failed to add connection',
         description: apiErr.response?.data?.error || 'Check your settings and try again.',
-        variant: 'destructive' 
+        variant: 'destructive'
       })
     }
   }
@@ -196,26 +207,34 @@ export function ConnectionSidebar({ selectedId, onSelect, onSettingsClick, prefi
         </div>
       </nav>
 
-      <div className="p-4 border-t border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 flex gap-2">
-        <button
-          onClick={onSettingsClick}
-          className="flex-1 flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all border border-transparent"
-          title="Access Control"
-        >
-          <Settings className="w-4 h-4" />
-          <span className="font-medium">Settings</span>
-        </button>
-        <button
-          onClick={onThemeToggle}
-          className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all border border-transparent flex items-center justify-center"
-          title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-        >
-          {theme === 'light' ? (
-            <Moon className="w-4 h-4 text-slate-600" />
-          ) : (
-            <Sun className="w-4 h-4 text-yellow-400" />
-          )}
-        </button>
+      <div className="p-4 border-t border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 flex flex-col gap-2">
+        <div className="flex gap-2">
+          <button
+            onClick={onWishlistClick}
+            className="flex-1 flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all border border-transparent"
+            title="Wishlist"
+          >
+            <Star className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onSettingsClick}
+            className="flex-1 flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all border border-transparent"
+            title="Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+            className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all border border-transparent flex items-center justify-center"
+            title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+          >
+            {theme === 'light' ? (
+              <Moon className="w-4 h-4 text-slate-600" />
+            ) : (
+              <Sun className="w-4 h-4 text-yellow-400" />
+            )}
+          </button>
+        </div>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

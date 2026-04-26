@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import { ConnectionSidebar } from '@/components/ConnectionSidebar'
 import { FileExplorer } from '@/components/FileExplorer'
 import { WishlistView } from '@/pages/WishlistView'
@@ -8,12 +9,10 @@ import { SettingsView } from '@/pages/SettingsView'
 import { QuickSetup } from '@/components/QuickSetup'
 import { ToastContextProvider } from '@/lib/toast-context'
 import { setAuthToken, api } from '@/lib/api'
-import type { Connection } from '@/lib/types'
 import { Loader2, ShieldAlert, RefreshCw, Menu } from 'lucide-react'
-import { Button } from './components/ui/button'
 import { useConnections } from '@/hooks/useConnections'
 import { cn } from '@/lib/utils'
-import type { DiscoveredServer } from '@/lib/api'
+import { useBridgeHandshake, BridgeLinkingOverlay } from './components/BridgeLinking'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,29 +21,24 @@ const queryClient = new QueryClient({
 })
 
 function AppInner() {
+  const navigate = useNavigate()
+  const { alias, '*': path } = useParams()
   const { isLoading, isAuthenticated, loginWithRedirect, getAccessTokenSilently } = useAuth0()
-  const [selectedConn, setSelectedConn] = useState<Connection | null>(null)
   const [showWishlist, setShowWishlist] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [tokenInitialized, setTokenInitialized] = useState(false)
   const [accessDenied, setAccessDenied] = useState(false)
-  const [prefillServer, setPrefillServer] = useState<DiscoveredServer | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('theme') as 'light' | 'dark') || 'dark'
   })
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   
-  const { data: connections = [], isLoading: isConnsLoading } = useConnections()
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark')
-    localStorage.setItem('theme', theme)
-  }, [theme])
-
-  const devMode = !import.meta.env.VITE_AUTH0_DOMAIN
+  const { data: connections = [] } = useConnections()
+  const selectedConn = connections.find(c => c.alias === alias) || null
 
   // Inject token into API client
   useEffect(() => {
+    const devMode = !import.meta.env.VITE_AUTH0_DOMAIN
     if (isAuthenticated) {
       getAccessTokenSilently()
         .then((token) => {
@@ -53,26 +47,36 @@ function AppInner() {
         })
         .catch((err) => {
           console.error('Failed to get access token', err)
-          setTokenInitialized(true) // Proceed anyway, API will fail with 401
+          setTokenInitialized(true)
         })
     } else if (devMode) {
       setTokenInitialized(true)
     }
 
-    // Handle 403 errors globally
     const interceptor = api.interceptors.response.use(
       (res) => res,
       (err) => {
-        if (err.response?.status === 403) {
-          setAccessDenied(true)
-        }
+        if (err.response?.status === 403) setAccessDenied(true)
         return Promise.reject(err)
       }
     )
     return () => api.interceptors.response.eject(interceptor)
-  }, [isAuthenticated, getAccessTokenSilently, devMode])
+  }, [isAuthenticated, getAccessTokenSilently])
 
-  if (!devMode && (isLoading || (isAuthenticated && !tokenInitialized))) {
+  // Theme support
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  // Bridge Handshake logic (Modular)
+  const { status: bridgeStatus, error: bridgeError, reset: resetBridge } = useBridgeHandshake(
+    tokenInitialized,
+    isAuthenticated,
+    (conn) => navigate(`/f/${conn.alias}`)
+  )
+
+  if (isLoading || (isAuthenticated && !tokenInitialized)) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -80,15 +84,11 @@ function AppInner() {
     )
   }
 
-  if (!devMode && !isAuthenticated) {
+  if (!isAuthenticated && !import.meta.env.VITE_AUTH0_DOMAIN === false) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4 bg-background text-foreground">
         <h1 className="text-3xl font-bold">SynoBridge</h1>
-        <p className="text-muted-foreground">Sign in to manage your SMB shares</p>
-        <button
-          onClick={() => loginWithRedirect()}
-          className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-        >
+        <button onClick={() => loginWithRedirect()} className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
           Sign In
         </button>
       </div>
@@ -97,59 +97,23 @@ function AppInner() {
 
   if (accessDenied) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen gap-6 p-8 text-center animate-in fade-in zoom-in duration-300 bg-background">
-        <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center text-destructive border border-destructive/20 shadow-[0_0_30px_rgba(var(--destructive),0.1)]">
-          <ShieldAlert className="w-10 h-10" />
-        </div>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold">Access Restricted</h1>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Your account is authenticated, but there was an issue verifying your permissions. 
-            This usually happens if your email is not whitelisted or if the auth service is busy.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => window.location.reload()} className="gap-2">
-            <RefreshCw className="w-4 h-4" />
-            Retry
-          </Button>
-          <Button variant="ghost" onClick={() => loginWithRedirect()}>
-            Sign in again
-          </Button>
-        </div>
+      <div className="flex flex-col items-center justify-center h-screen gap-6 p-8 text-center bg-background">
+        <ShieldAlert className="w-16 h-16 text-destructive" />
+        <h2 className="text-2xl font-bold">Access Denied</h2>
+        <p className="text-muted-foreground max-w-md">Your account does not have permission to access SynoBridge.</p>
+        <button onClick={() => window.location.reload()} className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-md hover:bg-secondary/80">
+          <RefreshCw className="w-4 h-4" /> Retry
+        </button>
       </div>
     )
   }
 
-  const handleSelectConn = (conn: Connection) => {
-    setSelectedConn(conn)
-    setShowWishlist(false)
-    setShowSettings(false)
-    setIsMobileSidebarOpen(false)
-  }
-
-  const handleWishlistNavigate = (conn: Connection, _path: string) => {
-    setSelectedConn(conn)
-    setShowWishlist(false)
-    setShowSettings(false)
-    setIsMobileSidebarOpen(false)
-  }
-
-  const handleSettingsClick = () => {
-    setShowSettings(true)
-    setShowWishlist(false)
-    setIsMobileSidebarOpen(false)
-  }
-
-
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground relative">
-      {/* Mobile Sidebar Overlay */}
+      <BridgeLinkingOverlay status={bridgeStatus} error={bridgeError} onReset={resetBridge} />
+
       {isMobileSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-200"
-          onClick={() => setIsMobileSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden" onClick={() => setIsMobileSidebarOpen(false)} />
       )}
 
       <div className={cn(
@@ -158,41 +122,62 @@ function AppInner() {
       )}>
         <ConnectionSidebar
           selectedId={selectedConn?.id ?? null}
-          onSelect={handleSelectConn}
-          onSettingsClick={handleSettingsClick}
-          prefillServer={prefillServer}
-          onPrefillClear={() => setPrefillServer(null)}
+          onSelect={(conn) => {
+            navigate(`/f/${conn.alias}`)
+            setIsMobileSidebarOpen(false)
+            setShowWishlist(false)
+            setShowSettings(false)
+          }}
+          onWishlistClick={() => {
+            setShowWishlist(true)
+            setShowSettings(false)
+            setIsMobileSidebarOpen(false)
+          }}
+          onSettingsClick={() => {
+            setShowSettings(true)
+            setShowWishlist(false)
+            setIsMobileSidebarOpen(false)
+          }}
           theme={theme}
-          onThemeToggle={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+          setTheme={setTheme}
         />
       </div>
 
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile Header */}
-        <header className="lg:hidden h-14 border-b border-border/50 flex items-center px-4 gap-4 glass-sidebar shrink-0">
-          <button 
-            onClick={() => setIsMobileSidebarOpen(true)}
-            className="p-2 -ml-2 rounded-lg hover:bg-accent transition-colors"
-          >
+      <main className="flex-1 flex flex-col min-w-0 relative h-full">
+        <header className="h-14 border-b flex items-center px-4 shrink-0 bg-background/80 backdrop-blur-md sticky top-0 z-10">
+          <button onClick={() => setIsMobileSidebarOpen(true)} className="p-2 -ml-2 mr-2 lg:hidden hover:bg-secondary rounded-md transition-colors">
             <Menu className="w-5 h-5" />
           </button>
-          <h1 className="font-bold text-sm truncate flex-1">
-            {selectedConn ? (selectedConn.alias || selectedConn.host) : "SynoBridge"}
-          </h1>
-        </header>
-        {showSettings ? (
-          <SettingsView />
-        ) : showWishlist ? (
-          <WishlistView onNavigate={handleWishlistNavigate} />
-        ) : selectedConn ? (
-          <FileExplorer key={selectedConn.id} connection={selectedConn} />
-        ) : connections.length === 0 && !isConnsLoading ? (
-          <QuickSetup onSetup={(s) => setPrefillServer(s)} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
-            <p className="text-sm">Select a connection to browse files</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-sm font-semibold truncate">
+              {showSettings ? 'Settings' : showWishlist ? 'Wishlist' : selectedConn?.alias || 'SynoBridge'}
+            </h1>
           </div>
-        )}
+        </header>
+
+        <div className="flex-1 overflow-hidden">
+          {showSettings ? (
+            <SettingsView open={true} onClose={() => setShowSettings(false)} theme={theme} setTheme={setTheme} />
+          ) : showWishlist ? (
+            <WishlistView onNavigate={(conn, p) => {
+              navigate(`/f/${conn.alias}/${p}`)
+              setShowWishlist(false)
+            }} />
+          ) : selectedConn ? (
+            <FileExplorer 
+              key={selectedConn.id} 
+              connection={selectedConn} 
+              initialPath={path || ''}
+              onPathChange={(newPath) => navigate(`/f/${selectedConn.alias}/${newPath}`)}
+            />
+          ) : connections.length === 0 ? (
+            <QuickSetup onSetup={() => {}} />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+              <p className="text-sm">Select a connection to browse files</p>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   )
@@ -202,7 +187,14 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastContextProvider>
-        <AppInner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<AppInner />} />
+            <Route path="/connect" element={<AppInner />} />
+            <Route path="/f/:alias" element={<AppInner />} />
+            <Route path="/f/:alias/*" element={<AppInner />} />
+          </Routes>
+        </BrowserRouter>
       </ToastContextProvider>
     </QueryClientProvider>
   )

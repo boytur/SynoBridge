@@ -1,4 +1,4 @@
-import { X, Download, Maximize2, FileText, Music, Video, Image as ImageIcon, ExternalLink, Loader2 } from 'lucide-react'
+import { X, Download, FileText, Music, Video, Image as ImageIcon, ExternalLink, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { fileSystemApi } from '@/lib/api'

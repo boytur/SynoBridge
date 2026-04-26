@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Server, Search, Loader2, ArrowRight, Wifi } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { discoveryApi, type DiscoveredServer } from '@/lib/api'
-import { cn } from '@/lib/utils'
 
 interface Props {
   onSetup: (server: DiscoveredServer) => void
