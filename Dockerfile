@@ -10,8 +10,8 @@ ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Stage 2: Build the Go Backend
-FROM golang:alpine AS backend-builder
-RUN apk add --no-cache gcc musl-dev sqlite-dev
+FROM golang:1.26-alpine AS backend-builder
+RUN for i in 1 2 3; do apk add --no-cache gcc musl-dev sqlite-dev && break || sleep 2; done
 WORKDIR /app
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download

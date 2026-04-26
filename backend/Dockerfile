@@ -1,5 +1,5 @@
-FROM golang:1.24-alpine AS builder
-RUN apk add --no-cache gcc musl-dev sqlite-dev
+FROM golang:1.26-alpine AS builder
+RUN for i in 1 2 3; do apk add --no-cache gcc musl-dev sqlite-dev && break || sleep 2; done
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
