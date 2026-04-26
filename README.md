@@ -3,19 +3,28 @@
 SynoBridge is a modern, high-fidelity web application designed to seamlessly bridge legacy SMB NAS units and file servers into a sleek, fast, and secure web experience. It features a cross-platform Bridge Agent and a beautiful React-based frontend.
 
 ## 📸 UI Overview
-*(Screenshot placeholder - you can replace this with a screenshot of your beautiful dashboard!)*
 
+![](release/assets/1.png)
+
+![](release/assets/2.png)
+
+![](release/assets/3.png)
+
+![](release/assets/4.png)
+
+![](release/assets/5.png)
 ---
 
 ## 🚀 Quick Start (Production)
 
-SynoBridge is packaged as a single, highly efficient, all-in-one Docker image containing both the backend API and the compiled React frontend. 
+SynoBridge is packaged as a single, highly efficient, all-in-one Docker image containing both the backend API and the compiled React frontend.
 
 **You do not need to clone this repository to run SynoBridge.**
 
 ### Option A: Using Docker Compose (Recommended)
 
 1. Create a new directory on your server and create a `docker-compose.yml` file:
+
 ```yaml
 services:
   synobridge:
@@ -35,12 +44,15 @@ services:
       - ./data:/data
     restart: unless-stopped
 ```
+
 *(Note: We use `network_mode: host` so the backend can correctly discover Bridge Agents via mDNS on your local network.)*
 
 2. Start the server:
+
 ```bash
 docker compose up -d
 ```
+
 3. Open your browser and navigate to `http://localhost:4455` (or your server's IP address).
 
 ---
@@ -48,6 +60,7 @@ docker compose up -d
 ### Option B: Using Docker Run
 
 If you prefer a quick one-liner command:
+
 ```bash
 docker run -d \
   --name synobridge \
@@ -72,7 +85,7 @@ To connect a legacy network share, you need to run the **Bridge Agent** on a mac
    # For Linux
    cd bridge
    GOOS=linux GOARCH=amd64 go build -o synobridge-agent main.go
-   
+
    # For Windows
    cd bridge
    GOOS=windows GOARCH=amd64 go build -o synobridge-agent.exe main.go
