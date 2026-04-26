@@ -48,6 +48,12 @@ export const fileSystemApi = {
     })
     return data ?? []
   },
+  getFileUrl: (connectionId: number, path: string) => {
+    const authHeader = api.defaults.headers.common['Authorization'] as string
+    const token = authHeader?.replace('Bearer ', '')
+    const baseUrl = api.defaults.baseURL || window.location.origin
+    return `${baseUrl}/api/v1/fs/download?id=${connectionId}&path=${encodeURIComponent(path)}${token ? `&token=${token}` : ''}`
+  },
   download: (connectionId: number, path: string) => {
     const token = api.defaults.headers.common['Authorization']
     const url = `${api.defaults.baseURL}/api/v1/fs/download?id=${connectionId}&path=${encodeURIComponent(path)}`
