@@ -9,9 +9,10 @@ import { QuickSetup } from '@/components/QuickSetup'
 import { ToastContextProvider } from '@/lib/toast-context'
 import { setAuthToken, api } from '@/lib/api'
 import type { Connection } from '@/lib/types'
-import { Loader2, ShieldAlert, RefreshCw } from 'lucide-react'
+import { Loader2, ShieldAlert, RefreshCw, Menu } from 'lucide-react'
 import { Button } from './components/ui/button'
 import { useConnections } from '@/hooks/useConnections'
+import { cn } from '@/lib/utils'
 import type { DiscoveredServer } from '@/lib/api'
 
 const queryClient = new QueryClient({
@@ -28,8 +29,17 @@ function AppInner() {
   const [tokenInitialized, setTokenInitialized] = useState(false)
   const [accessDenied, setAccessDenied] = useState(false)
   const [prefillServer, setPrefillServer] = useState<DiscoveredServer | null>(null)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('theme') as 'light' | 'dark') || 'dark'
+  })
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   
   const { data: connections = [], isLoading: isConnsLoading } = useConnections()
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   const devMode = !import.meta.env.VITE_AUTH0_DOMAIN
 
@@ -64,7 +74,7 @@ function AppInner() {
 
   if (!devMode && (isLoading || (isAuthenticated && !tokenInitialized))) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
@@ -72,7 +82,7 @@ function AppInner() {
 
   if (!devMode && !isAuthenticated) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4">
+      <div className="flex flex-col items-center justify-center h-screen gap-4 bg-background text-foreground">
         <h1 className="text-3xl font-bold">SynoBridge</h1>
         <p className="text-muted-foreground">Sign in to manage your SMB shares</p>
         <button
@@ -87,12 +97,12 @@ function AppInner() {
 
   if (accessDenied) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen gap-6 p-8 text-center animate-in fade-in zoom-in duration-300">
+      <div className="flex flex-col items-center justify-center h-screen gap-6 p-8 text-center animate-in fade-in zoom-in duration-300 bg-background">
         <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center text-destructive border border-destructive/20 shadow-[0_0_30px_rgba(var(--destructive),0.1)]">
           <ShieldAlert className="w-10 h-10" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-white">Access Restricted</h1>
+          <h1 className="text-2xl font-bold">Access Restricted</h1>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
             Your account is authenticated, but there was an issue verifying your permissions. 
             This usually happens if your email is not whitelisted or if the auth service is busy.
@@ -115,36 +125,67 @@ function AppInner() {
     setSelectedConn(conn)
     setShowWishlist(false)
     setShowSettings(false)
+    setIsMobileSidebarOpen(false)
   }
 
   const handleWishlistNavigate = (conn: Connection, _path: string) => {
     setSelectedConn(conn)
     setShowWishlist(false)
     setShowSettings(false)
+    setIsMobileSidebarOpen(false)
   }
 
   const handleSettingsClick = () => {
     setShowSettings(true)
     setShowWishlist(false)
+    setIsMobileSidebarOpen(false)
   }
 
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <ConnectionSidebar
-        selectedId={selectedConn?.id ?? null}
-        onSelect={handleSelectConn}
-        onSettingsClick={handleSettingsClick}
-        prefillServer={prefillServer}
-        onPrefillClear={() => setPrefillServer(null)}
-      />
-      <main className="flex-1 overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground relative">
+      {/* Mobile Sidebar Overlay */}
+      {isMobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-200"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
+      <div className={cn(
+        "fixed lg:static inset-y-0 left-0 z-50 transform lg:transform-none transition-transform duration-300 ease-in-out",
+        isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      )}>
+        <ConnectionSidebar
+          selectedId={selectedConn?.id ?? null}
+          onSelect={handleSelectConn}
+          onSettingsClick={handleSettingsClick}
+          prefillServer={prefillServer}
+          onPrefillClear={() => setPrefillServer(null)}
+          theme={theme}
+          onThemeToggle={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+        />
+      </div>
+
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Mobile Header */}
+        <header className="lg:hidden h-14 border-b border-border/50 flex items-center px-4 gap-4 glass-sidebar shrink-0">
+          <button 
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="p-2 -ml-2 rounded-lg hover:bg-accent transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <h1 className="font-bold text-sm truncate flex-1">
+            {selectedConn ? (selectedConn.alias || selectedConn.host) : "SynoBridge"}
+          </h1>
+        </header>
         {showSettings ? (
           <SettingsView />
         ) : showWishlist ? (
           <WishlistView onNavigate={handleWishlistNavigate} />
         ) : selectedConn ? (
-          <FileExplorer connection={selectedConn} />
+          <FileExplorer key={selectedConn.id} connection={selectedConn} />
         ) : connections.length === 0 && !isConnsLoading ? (
           <QuickSetup onSetup={(s) => setPrefillServer(s)} />
         ) : (
