@@ -39,12 +39,12 @@ func NewSessionPool() *SessionPool {
 	return p
 }
 
-func sessionKey(userID string, connID uint) string {
-	return fmt.Sprintf("%s:%d", userID, connID)
+func sessionKey(userID string, connID uint, shareName string) string {
+	return fmt.Sprintf("%s:%d:%s", userID, connID, shareName)
 }
 
 func (p *SessionPool) GetSession(userID string, connID uint, config SMBConfig) (*SessionEntry, error) {
-	key := sessionKey(userID, connID)
+	key := sessionKey(userID, connID, config.ShareName)
 
 	p.mu.RLock()
 	entry, ok := p.sessions[key]
@@ -156,13 +156,17 @@ func (p *SessionPool) ListShares(config SMBConfig) ([]string, error) {
 }
 
 func (p *SessionPool) CloseSession(userID string, connID uint) error {
-	key := sessionKey(userID, connID)
+	// This is now slightly complex because we don't know which share to close
+	// For now, let's just close all sessions for this connection
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if entry, ok := p.sessions[key]; ok {
-		entry.Share.Umount()
-		entry.Session.Logoff()
-		delete(p.sessions, key)
+	prefix := fmt.Sprintf("%s:%d:", userID, connID)
+	for key, entry := range p.sessions {
+		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
+			entry.Share.Umount()
+			entry.Session.Logoff()
+			delete(p.sessions, key)
+		}
 	}
 	return nil
 }

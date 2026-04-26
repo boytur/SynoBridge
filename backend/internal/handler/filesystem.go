@@ -171,8 +171,19 @@ func (h *FSHandler) Download(c *gin.Context) {
 	if contentType == "" {
 		contentType = "application/octet-stream"
 	}
-	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filepath.Base(path)))
+
+	// For images, videos, and PDFs, show inline instead of attachment
+	disposition := "attachment"
+	if strings.HasPrefix(contentType, "image/") || 
+	   strings.HasPrefix(contentType, "video/") || 
+	   strings.HasPrefix(contentType, "audio/") || 
+	   contentType == "application/pdf" {
+		disposition = "inline"
+	}
+
+	c.Header("Content-Disposition", fmt.Sprintf(`%s; filename="%s"`, disposition, filepath.Base(path)))
 	c.Header("Content-Length", strconv.FormatInt(size, 10))
+	c.Header("Accept-Ranges", "bytes") // Inform browser we might support ranges (though reader doesn't yet)
 	c.DataFromReader(http.StatusOK, size, contentType, reader, nil)
 }
 
