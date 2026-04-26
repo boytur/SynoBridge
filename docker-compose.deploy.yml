@@ -1,0 +1,21 @@
+services:
+  synobridge:
+    image: boytur/synobridge:latest
+    container_name: synobridge
+    network_mode: host
+    environment:
+      - GIN_MODE=release
+      - PORT=4455 # The port SynoBridge will be accessible on
+      - DB_PATH=/data/synobridge.db
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-changeme32byteskey1234567890123}
+      # Optional: Auth0 Variables
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+      - ALLOWED_EMAILS=${ALLOWED_EMAILS}
+    volumes:
+      # Mount the persistent SQLite database volume
+      - synobridge_data:/data
+    restart: unless-stopped
+
+volumes:
+  synobridge_data:

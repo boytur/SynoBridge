@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/omnismb/backend/internal/auth"
 	"github.com/omnismb/backend/internal/handler"
@@ -57,6 +58,18 @@ func main() {
 		ExposeHeaders:    []string{"Content-Length", "Content-Disposition"},
 		AllowCredentials: true,
 	}))
+
+	// Serve the compiled frontend (React SPA)
+	r.Use(static.Serve("/", static.LocalFile("./public", true)))
+
+	// SPA Fallback: If a route is not found and it's not an API request, serve index.html
+	r.NoRoute(func(c *gin.Context) {
+		if !strings.HasPrefix(c.Request.URL.Path, "/api/") {
+			c.File("./public/index.html")
+		} else {
+			c.JSON(404, gin.H{"error": "Endpoint not found"})
+		}
+	})
 
 	// Auth middleware selection
 	var authMiddleware gin.HandlerFunc
