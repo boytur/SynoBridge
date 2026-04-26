@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 11%;
+    --foreground: 213 31% 91%;
+    --card: 222 47% 14%;
+    --card-foreground: 213 31% 91%;
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --primary: 210 100% 56%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 222 47% 18%;
+    --secondary-foreground: 213 31% 91%;
+    --muted: 223 47% 16%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 216 34% 20%;
+    --accent-foreground: 213 31% 91%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --ring: 210 100% 56%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Glassmorphism utilities */
+.glass {
+  @apply bg-white/5 backdrop-blur-md border border-white/10;
+}
+
+.glass-sidebar {
+  @apply bg-black/30 backdrop-blur-xl border-r border-white/10;
+}
