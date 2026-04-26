@@ -8,6 +8,7 @@ import type {
   AddWishlistDto,
   ScanSharesDto,
 } from './types'
+import { API_ROUTES } from './routes'
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '',
@@ -25,25 +26,25 @@ export function setAuthToken(token: string | null) {
 // Connections
 export const connectionsApi = {
   getAll: async (): Promise<Connection[]> => {
-    const { data } = await api.get('/api/v1/connections')
+    const { data } = await api.get(API_ROUTES.V1.CONNECTIONS.BASE)
     return data
   },
   create: async (dto: CreateConnectionDto): Promise<Connection> => {
-    const { data } = await api.post('/api/v1/connections', dto)
+    const { data } = await api.post(API_ROUTES.V1.CONNECTIONS.BASE, dto)
     return data
   },
   update: async (id: number, dto: UpdateConnectionDto): Promise<void> => {
-    await api.put(`/api/v1/connections/${id}`, dto)
+    await api.put(API_ROUTES.V1.CONNECTIONS.BY_ID(id), dto)
   },
   delete: async (id: number): Promise<void> => {
-    await api.delete(`/api/v1/connections/${id}`)
+    await api.delete(API_ROUTES.V1.CONNECTIONS.BY_ID(id))
   },
 }
 
 // File system
 export const fileSystemApi = {
   list: async (connectionId: number, path: string): Promise<FileInfo[]> => {
-    const { data } = await api.get('/api/v1/fs/list', {
+    const { data } = await api.get(API_ROUTES.V1.FS.LIST, {
       params: { id: connectionId, path },
     })
     return data ?? []
@@ -52,11 +53,11 @@ export const fileSystemApi = {
     const authHeader = api.defaults.headers.common['Authorization'] as string
     const token = authHeader?.replace('Bearer ', '')
     const baseUrl = api.defaults.baseURL || window.location.origin
-    return `${baseUrl}/api/v1/fs/download?id=${connectionId}&path=${encodeURIComponent(path)}${token ? `&token=${token}` : ''}`
+    return `${baseUrl}${API_ROUTES.V1.FS.DOWNLOAD}?id=${connectionId}&path=${encodeURIComponent(path)}${token ? `&token=${token}` : ''}`
   },
   download: (connectionId: number, path: string) => {
     const token = api.defaults.headers.common['Authorization']
-    const url = `${api.defaults.baseURL}/api/v1/fs/download?id=${connectionId}&path=${encodeURIComponent(path)}`
+    const url = `${api.defaults.baseURL}${API_ROUTES.V1.FS.DOWNLOAD}?id=${connectionId}&path=${encodeURIComponent(path)}`
     // Open in new tab to trigger browser download
     const a = document.createElement('a')
     a.href = url
@@ -81,7 +82,7 @@ export const fileSystemApi = {
     form.append('id', String(connectionId))
     form.append('path', path)
     form.append('file', file)
-    await api.post('/api/v1/fs/upload', form, {
+    await api.post(API_ROUTES.V1.FS.UPLOAD, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (e) => {
         if (onProgress && e.total) {
@@ -91,30 +92,30 @@ export const fileSystemApi = {
     })
   },
   delete: async (connectionId: number, path: string, isDirectory: boolean): Promise<void> => {
-    await api.delete('/api/v1/fs/delete', {
+    await api.delete(API_ROUTES.V1.FS.DELETE, {
       data: { id: connectionId, path, isDirectory },
     })
   },
   mkdir: async (connectionId: number, path: string, name: string): Promise<void> => {
-    await api.post('/api/v1/fs/mkdir', { id: connectionId, path, name })
+    await api.post(API_ROUTES.V1.FS.MKDIR, { id: connectionId, path, name })
   },
   rename: async (connectionId: number, oldPath: string, newPath: string): Promise<void> => {
-    await api.put('/api/v1/fs/rename', { id: connectionId, oldPath, newPath })
+    await api.put(API_ROUTES.V1.FS.RENAME, { id: connectionId, oldPath, newPath })
   },
 }
 
 // Wishlist
 export const wishlistApi = {
   getAll: async (): Promise<WishlistItem[]> => {
-    const { data } = await api.get('/api/v1/wishlist')
+    const { data } = await api.get(API_ROUTES.V1.WISHLIST.BASE)
     return data ?? []
   },
   add: async (dto: AddWishlistDto): Promise<WishlistItem> => {
-    const { data } = await api.post('/api/v1/wishlist', dto)
+    const { data } = await api.post(API_ROUTES.V1.WISHLIST.BASE, dto)
     return data
   },
   remove: async (id: number): Promise<void> => {
-    await api.delete(`/api/v1/wishlist/${id}`)
+    await api.delete(API_ROUTES.V1.WISHLIST.BY_ID(id))
   },
 }
 
@@ -128,11 +129,11 @@ export interface DiscoveredServer {
 
 export const discoveryApi = {
   scan: async (): Promise<DiscoveredServer[]> => {
-    const { data } = await api.get('/api/v1/discovery/scan')
+    const { data } = await api.get(API_ROUTES.V1.DISCOVERY.SCAN)
     return data ?? []
   },
   scanShares: async (dto: ScanSharesDto): Promise<string[]> => {
-    const { data } = await api.post('/api/v1/discovery/shares', dto)
+    const { data } = await api.post(API_ROUTES.V1.DISCOVERY.SHARES, dto)
     return data ?? []
   },
 }
@@ -145,13 +146,13 @@ export interface WhitelistedEmail {
 
 export const whitelistApi = {
   getAll: async (): Promise<WhitelistedEmail[]> => {
-    const { data } = await api.get('/api/v1/whitelist')
+    const { data } = await api.get(API_ROUTES.V1.WHITELIST.BASE)
     return data ?? []
   },
   add: async (email: string): Promise<void> => {
-    await api.post('/api/v1/whitelist', { email })
+    await api.post(API_ROUTES.V1.WHITELIST.BASE, { email })
   },
   delete: async (id: number): Promise<void> => {
-    await api.delete(`/api/v1/whitelist/${id}`)
+    await api.delete(API_ROUTES.V1.WHITELIST.BY_ID(id))
   },
 }

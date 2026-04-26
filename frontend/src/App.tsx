@@ -13,6 +13,7 @@ import { Loader2, ShieldAlert, RefreshCw, Menu } from 'lucide-react'
 import { useConnections } from '@/hooks/useConnections'
 import { cn } from '@/lib/utils'
 import { useBridgeHandshake, BridgeLinkingOverlay } from './components/BridgeLinking'
+import { ROUTES } from '@/lib/routes'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -73,7 +74,7 @@ function AppInner() {
   const { status: bridgeStatus, error: bridgeError, reset: resetBridge } = useBridgeHandshake(
     tokenInitialized,
     isAuthenticated,
-    (conn) => navigate(`/f/${conn.alias}`)
+    (conn) => navigate(ROUTES.FILE.explorer(conn.alias))
   )
 
   if (isLoading || (isAuthenticated && !tokenInitialized)) {
@@ -123,7 +124,7 @@ function AppInner() {
         <ConnectionSidebar
           selectedId={selectedConn?.id ?? null}
           onSelect={(conn) => {
-            navigate(`/f/${conn.alias}`)
+            navigate(ROUTES.FILE.explorer(conn.alias))
             setIsMobileSidebarOpen(false)
             setShowWishlist(false)
             setShowSettings(false)
@@ -160,7 +161,7 @@ function AppInner() {
             <SettingsView open={true} onClose={() => setShowSettings(false)} theme={theme} setTheme={setTheme} />
           ) : showWishlist ? (
             <WishlistView onNavigate={(conn, p) => {
-              navigate(`/f/${conn.alias}/${p}`)
+              navigate(ROUTES.FILE.explorer(conn.alias, p))
               setShowWishlist(false)
             }} />
           ) : selectedConn ? (
@@ -168,7 +169,7 @@ function AppInner() {
               key={selectedConn.id} 
               connection={selectedConn} 
               initialPath={path || ''}
-              onPathChange={(newPath) => navigate(`/f/${selectedConn.alias}/${newPath}`)}
+              onPathChange={(newPath) => navigate(ROUTES.FILE.explorer(selectedConn.alias, newPath))}
             />
           ) : connections.length === 0 ? (
             <QuickSetup onSetup={() => {}} />
@@ -189,10 +190,10 @@ export default function App() {
       <ToastContextProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<AppInner />} />
-            <Route path="/connect" element={<AppInner />} />
-            <Route path="/f/:alias" element={<AppInner />} />
-            <Route path="/f/:alias/*" element={<AppInner />} />
+            <Route path={ROUTES.HOME} element={<AppInner />} />
+            <Route path={ROUTES.CONNECT} element={<AppInner />} />
+            <Route path={ROUTES.FILE.MATCH_BASE} element={<AppInner />} />
+            <Route path={ROUTES.FILE.MATCH_ALL} element={<AppInner />} />
           </Routes>
         </BrowserRouter>
       </ToastContextProvider>

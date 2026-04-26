@@ -3,6 +3,7 @@ import { CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Connection } from '@/lib/types';
+import { API_ROUTES } from '@/lib/routes';
 
 export type LinkingStatus = 'handshaking' | 'linking' | 'success' | 'error' | null;
 
@@ -52,7 +53,7 @@ export function useBridgeHandshake(
             const alias = `Bridge: ${details.name}`;
             
             console.log("📡 [Handshake] Step 2: Posting to backend...");
-            return api.post('/api/v1/connections', {
+            return api.post(API_ROUTES.V1.CONNECTIONS.BASE, {
               alias: alias,
               host: details.ip,
               port: 445,
@@ -69,7 +70,7 @@ export function useBridgeHandshake(
             if (conn && conn.alias) {
               setSelectedConn(conn);
             } else {
-              api.get<Connection[]>('/api/v1/connections').then(response => {
+              api.get<Connection[]>(API_ROUTES.V1.CONNECTIONS.BASE).then(response => {
                 const existing = response.data.find(c => c.alias === alias);
                 if (existing) setSelectedConn(existing);
               });
@@ -88,7 +89,7 @@ export function useBridgeHandshake(
             if (err.response?.status === 409) {
               console.log("ℹ️ [Handshake] Connection exists (409).");
               const alias = `Bridge: ${err.config.data ? JSON.parse(err.config.data).alias : ''}`;
-              api.get<Connection[]>('/api/v1/connections').then(response => {
+              api.get<Connection[]>(API_ROUTES.V1.CONNECTIONS.BASE).then(response => {
                 const existing = response.data.find(c => c.alias === alias);
                 if (existing) setSelectedConn(existing);
               });
