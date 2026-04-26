@@ -104,6 +104,15 @@ export function FileList({ files, connectionId, currentPath, onNavigate }: Props
                   <td className="px-4 py-2.5 flex items-center gap-2">
                     {file.isDirectory ? (
                       <Folder className="w-4 h-4 text-yellow-400 shrink-0" />
+                    ) : ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(file.name.split('.').pop()?.toLowerCase() || '') ? (
+                      <div className="w-5 h-5 rounded overflow-hidden bg-white/5 flex items-center justify-center shrink-0">
+                         <img 
+                          src={fileSystemApi.getFileUrl(connectionId, file.path)} 
+                          alt="" 
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
                     ) : (
                       <File className="w-4 h-4 text-muted-foreground shrink-0" />
                     )}
