@@ -154,16 +154,22 @@ func (v *Validator) findKey(token *jwt.Token, jwks *JWKS) (interface{}, error) {
 func (v *Validator) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
+		token := ""
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			token = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+		
+		// If header is missing/invalid, try query param
+		if token == "" {
+			token = c.Query("token")
+		}
+
+		if token == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
 			return
 		}
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header"})
-			return
-		}
-		claims, err := v.ValidateToken(parts[1])
+		
+		claims, err := v.ValidateToken(token)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid authentication token"})
 			return
@@ -181,7 +187,7 @@ func (v *Validator) Middleware() gin.HandlerFunc {
 			if found {
 				claims.Email = cachedEmail
 			} else {
-				email, err := v.fetchEmailFromUserInfo(parts[1])
+				email, err := v.fetchEmailFromUserInfo(token)
 				if err == nil {
 					claims.Email = email
 					v.mu.Lock()
