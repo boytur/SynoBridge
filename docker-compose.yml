@@ -9,7 +9,7 @@ services:
       - GIN_MODE=debug
       - DB_PATH=/data/omnismb.db
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-changeme32byteskey1234567890123}
-      - FRONTEND_URL=http://localhost:5173
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:4455}
       - AUTH0_DOMAIN=${AUTH0_DOMAIN}
       - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
       - ALLOWED_EMAILS=${ALLOWED_EMAILS}
@@ -21,13 +21,14 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://localhost:8080
+        - VITE_API_URL=
         - VITE_AUTH0_DOMAIN=${AUTH0_DOMAIN}
         - VITE_AUTH0_CLIENT_ID=${AUTH0_CLIENT_ID}
         - VITE_AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
     networks:
       - omnismb
-
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 volumes:
   db_data:
 
