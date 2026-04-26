@@ -13,7 +13,7 @@ echo "🏷️  Tag: $VERSION"
 echo "----------------------------------------"
 
 echo "📦 Building Unified Image (Backend + Frontend)..."
-docker build -t $REGISTRY/synobridge:$VERSION -f Dockerfile .
+docker build --network=host -t $REGISTRY/synobridge:$VERSION -f Dockerfile .
 
 echo ""
 echo "✅ Success! The unified image has been built and tagged locally."
