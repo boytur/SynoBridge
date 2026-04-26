@@ -1,73 +1,60 @@
-# Release v0.1.0 🚀
+# Release v0.2.1 🚀
 
-**SynoBridge** — Your bridge to seamless SMB storage management.
+**SynoBridge** — Improved Authentication & Decoupled Configuration.
 
 ## What's New
 
-### ✨ Unified Docker Image
-SynoBridge is now packaged as a **single, all-in-one Docker image**. Pull once, run everywhere — no multi-container setup needed.
+### ✨ Generic Docker Image (Runtime Config)
+Starting from `v0.2.0`, the SynoBridge Docker image is now **entirely generic**. Authentication settings (Auth0) are no longer baked into the frontend at build-time. Instead, the frontend fetches its configuration from the backend at runtime.
 
+This means you can pull the same image and configure it for any domain or Auth0 tenant just by changing environment variables.
+
+### 🛡️ Robust Authentication
+- **Secure Origin Validation:** Clear UI feedback when attempting to use Auth0 over insecure (non-HTTPS) connections.
+- **Configuration Safety:** Automatic detection of missing credentials (like `AUTH0_CLIENT_ID`) with helpful on-screen instructions.
+- **No-Auth Mode:** Seamlessly falls back to unauthenticated mode if no Auth0 variables are provided, allowing for quick internal deployments.
+
+### 📦 Docker Image
 ```bash
-docker pull boytur/synobridge:0.1.0
+docker pull boytur/synobridge:v0.2.1
 ```
-
-### 🏗️ Architecture
-- **Go Backend** serves both the REST API and the compiled React frontend from a single process
-- **SQLite** for lightweight, zero-config persistent storage
-- **mDNS** auto-discovery of Bridge Agents on your local network
-- **Auth0** optional authentication with email whitelist support
-
-### 🎨 Frontend
-- Beautiful glassmorphic dark/light theme UI built with React + Tailwind
-- File Explorer with auto-sliding breadcrumb navigation
-- Inline file preview (images, videos, text, code)
-- Drag-and-drop file upload
-- Quick Setup page with network scanner
-
-### 📡 Bridge Agent
-- Standalone binary for Windows and Linux
-- Auto-discovers on the network via mDNS
-- Secure one-click handshake to link NAS shares
 
 ---
 
-## 📦 Downloads
+## 🚀 Quick Start
 
-### Docker Image
-```bash
-# Pull and run
-docker run -d --name synobridge --network host \
-  -v $(pwd)/data:/data \
-  -e PORT=4455 \
-  -e GIN_MODE=release \
-  boytur/synobridge:0.1.0
+```yaml
+services:
+  synobridge:
+    image: boytur/synobridge:v0.2.1
+    container_name: synobridge
+    network_mode: host
+    environment:
+      - GIN_MODE=release
+      - PORT=4455
+      - DB_PATH=/data/synobridge.db
+      - ENCRYPTION_KEY=your-32-character-secret-key
+      # Optional: Auth0 settings
+      - AUTH0_DOMAIN=your-tenant.auth0.com
+      - AUTH0_CLIENT_ID=your-client-id
+      - AUTH0_AUDIENCE=your-api-identifier
+      - ALLOWED_EMAILS=user@example.com
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
 ```
-
-Or use the included `docker-compose.deploy.yml`:
-```bash
-docker compose -f docker-compose.deploy.yml up -d
-```
-
-### Bridge Agent Binaries
-| Platform | File |
-|----------|------|
-| Linux (amd64) | `synobridge-agent-linux-amd64` |
-| Windows (amd64) | `synobridge-agent-windows-amd64.exe` |
 
 ---
 
-## ⚙️ Environment Variables
+## ⚙️ Updated Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `80` | Port the server listens on |
-| `DB_PATH` | `/data/synobridge.db` | SQLite database path |
-| `GIN_MODE` | `debug` | Set to `release` for production |
-| `ENCRYPTION_KEY` | `changeme...` | 32-byte key for encrypting credentials |
-| `AUTH0_DOMAIN` | *(optional)* | Your Auth0 tenant domain |
-| `AUTH0_AUDIENCE` | *(optional)* | Your Auth0 API audience |
-| `ALLOWED_EMAILS` | *(optional)* | Comma-separated whitelist |
+| Variable | Description |
+|----------|-------------|
+| `AUTH0_DOMAIN` | Your Auth0 tenant domain (e.g., `tenant.auth0.com`) |
+| `AUTH0_CLIENT_ID` | **(New)** Your Auth0 Application Client ID |
+| `AUTH0_AUDIENCE` | Your Auth0 API Identifier (Audience) |
+| `ALLOWED_EMAILS` | Comma-separated list of allowed user emails |
 
 ---
 
-**Full Changelog**: https://github.com/boytur/SynoBridge/commits/v0.1.0
+**Full Changelog**: https://github.com/boytur/SynoBridge/commits/v0.2.1
