@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useAuth0 } from '@auth0/auth0-react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import { ConnectionSidebar } from '@/components/ConnectionSidebar'
@@ -14,6 +13,7 @@ import { useConnections } from '@/hooks/useConnections'
 import { cn } from '@/lib/utils'
 import { useBridgeHandshake, BridgeLinkingOverlay } from './components/BridgeLinking'
 import { ROUTES } from '@/lib/routes'
+import { useAuth, isAuthEnabled } from './components/AuthProvider'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,7 +24,7 @@ const queryClient = new QueryClient({
 function AppInner() {
   const navigate = useNavigate()
   const { alias, '*': path } = useParams()
-  const { isLoading, isAuthenticated, loginWithRedirect, getAccessTokenSilently } = useAuth0()
+  const { isLoading, isAuthenticated, loginWithRedirect, getAccessTokenSilently } = useAuth()
   const [showWishlist, setShowWishlist] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [tokenInitialized, setTokenInitialized] = useState(false)
@@ -39,7 +39,6 @@ function AppInner() {
 
   // Inject token into API client
   useEffect(() => {
-    const devMode = !import.meta.env.VITE_AUTH0_DOMAIN
     if (isAuthenticated) {
       getAccessTokenSilently()
         .then((token) => {
@@ -50,7 +49,7 @@ function AppInner() {
           console.error('Failed to get access token', err)
           setTokenInitialized(true)
         })
-    } else if (devMode) {
+    } else if (!isAuthEnabled) {
       setTokenInitialized(true)
     }
 
@@ -85,7 +84,7 @@ function AppInner() {
     )
   }
 
-  if (!isAuthenticated && !import.meta.env.VITE_AUTH0_DOMAIN === false) {
+  if (!isAuthenticated && isAuthEnabled()) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4 bg-background text-foreground">
         <h1 className="text-3xl font-bold">SynoBridge</h1>

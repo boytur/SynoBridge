@@ -71,6 +71,19 @@ func main() {
 		}
 	})
 
+	// Public config endpoint for frontend to discover its own settings
+	r.GET("/config", func(c *gin.Context) {
+		// Only expose PUBLIC configuration. DO NOT expose ENCRYPTION_KEY or other secrets.
+		clientId := getEnv("AUTH0_CLIENT_ID", "")
+		authRequired := auth0Domain != "" && auth0Audience != ""
+		c.JSON(200, gin.H{
+			"auth0Domain":   auth0Domain,
+			"auth0ClientId": clientId,
+			"auth0Audience": auth0Audience,
+			"authRequired":  authRequired,
+		})
+	})
+
 	// Auth middleware selection
 	var authMiddleware gin.HandlerFunc
 	if auth0Domain != "" && auth0Audience != "" {
